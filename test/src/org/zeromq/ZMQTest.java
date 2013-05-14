@@ -1,15 +1,23 @@
 package org.zeromq;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 
 import org.junit.Test;
-
 import org.zeromq.ZMQ.Context;
 import org.zeromq.ZMQ.Poller;
 import org.zeromq.ZMQ.Socket;
-
-import static org.junit.Assert.*;
 
 /**
  * @author Cliff Evans
@@ -512,6 +520,41 @@ public class ZMQTest {
         }
     }
 
+    @Test
+    public void testByteBufferRecv() throws InterruptedException, CharacterCodingException {
+        if (ZMQ.version_full() >= ZMQ.make_version(3, 0, 0)) {
+            ZMQ.Context context = ZMQ.context(1);
+            ByteBuffer bb = ByteBuffer.allocateDirect(6).order(ByteOrder.nativeOrder());
+            ZMQ.Socket push = null;
+            ZMQ.Socket pull = null;
+            try {
+                push = context.socket(ZMQ.PUSH);
+                pull = context.socket(ZMQ.PULL);
+                pull.bind("ipc:///tmp/recvbb");
+                push.connect("ipc:///tmp/recvbb");
+                push.send("PING".getBytes(), 0);
+                int size = pull.recvByteBuffer(bb, 0);
+                bb.limit(size);
+                Charset charset = Charset.forName("UTF-8");
+                CharsetDecoder decoder = charset.newDecoder();
+                CharBuffer charBuffer = decoder.decode(bb);
+                assertEquals("PING", charBuffer.toString());
+            } finally {
+                try {
+                    push.close();
+                } catch (Exception ignore) {
+                }
+                try {
+                    pull.close();
+                } catch (Exception ignore) {
+                }
+                try {
+                    context.term();
+                } catch (Exception ignore) {
+                }
+            }
+        }
+    }
     @Test
     public void testPollerUnregister() {
         Context context = ZMQ.context(1);

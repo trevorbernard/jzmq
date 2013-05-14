@@ -648,6 +648,35 @@ Java_org_zeromq_ZMQ_00024Socket_recvZeroCopy (JNIEnv *env,
 #endif
 } 
 
+JNIEXPORT jint JNICALL
+Java_org_zeromq_ZMQ_00024Socket_recvByteBuffer (JNIEnv *env, jobject obj, jobject buffer, jint flags)
+{
+    jbyte* buf = 0;
+    int rc = 0;
+
+    buf = (jbyte*) env->GetDirectBufferAddress(buffer);
+
+    if(buf == NULL)
+        return -1;
+
+    void* sock = get_socket (env, obj);
+    // Cache me
+    jclass cls = env->GetObjectClass(buffer);
+    jmethodID remainingHandle = env->GetMethodID(cls, "remaining", "()I");
+    env->DeleteLocalRef(cls);
+    int length = env->CallIntMethod(buffer, remainingHandle);
+
+    rc = zmq_recv(sock, buf, length, flags);
+    if(rc == -1) {
+        int err = zmq_errno();
+        if(err == EAGAIN) {
+            raise_exception (env, err);
+            return 0;
+        }
+    }
+    return rc;
+}
+
 /**
  * Called by Java's Socket::recv(byte[] buffer, int offset, int len, int flags).
  */

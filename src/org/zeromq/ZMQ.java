@@ -1355,6 +1355,14 @@ public class ZMQ {
 
             return new String(data);
         }
+        /**
+         * Receive a message
+         * 
+         * @param buffer
+         * @param flags
+         * @return bytes read, -1 on error
+         */
+        public native int recvByteBuffer(ByteBuffer buffer, int flags);
 
         /**
          * Class constructor.
