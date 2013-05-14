@@ -9,10 +9,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 
 import org.junit.Test;
 import org.zeromq.ZMQ.Context;
@@ -535,10 +532,9 @@ public class ZMQTest {
                 push.send("PING".getBytes(), 0);
                 int size = pull.recvByteBuffer(bb, 0);
                 bb.limit(size);
-                Charset charset = Charset.forName("UTF-8");
-                CharsetDecoder decoder = charset.newDecoder();
-                CharBuffer charBuffer = decoder.decode(bb);
-                assertEquals("PING", charBuffer.toString());
+                byte[] b = new byte[bb.remaining()];
+                bb.duplicate().get(b);
+                assertEquals("PING", new String(b));
             } finally {
                 try {
                     push.close();
