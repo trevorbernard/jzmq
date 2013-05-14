@@ -18,6 +18,7 @@
  */
 package org.zeromq;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.util.LinkedList;
@@ -417,7 +418,7 @@ public class ZMQ {
     /**
      * Inner class: Socket.
      */
-    public static class Socket {
+    public static class Socket implements Closeable {
         private final AtomicBoolean closed = new AtomicBoolean(false);
         /**
          * This is an explicit "destructor". It can be called to ensure the corresponding 0MQ Socket has been disposed
@@ -1281,6 +1282,15 @@ public class ZMQ {
             byte[] b = msg.getBytes();
             return send(b, 0, b.length, flags);
         }
+
+        /**
+         * Send a message
+         *
+         * @param bb ByteBuffer payload
+         * @param flags the flags to apply to the send operation
+         * @return the number of bytes sent
+         */
+        public native int sendByteBuffer(ByteBuffer bb, int flags);
 
         /**
          * Receive a message.

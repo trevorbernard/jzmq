@@ -515,6 +515,34 @@ Java_org_zeromq_ZMQ_00024Socket_sendZeroCopy (JNIEnv *env,
 #endif
 }
 
+JNIEXPORT jint JNICALL
+Java_org_zeromq_ZMQ_00024Socket_sendByteBuffer (JNIEnv *env, jobject obj, jobject buffer, jint flags)
+{
+    jbyte* buf = 0;
+    int rc = 0;
+
+    buf = (jbyte*) env->GetDirectBufferAddress(buffer);
+    if(buf == NULL)
+        return -1;
+
+    void *sock = get_socket (env, obj);
+
+    // TODO: Cache remaining method handle
+    //       One embodiment is a static native initializer function that caches method and class handles
+    jclass cls = env->GetObjectClass(buffer);
+    jmethodID remainingHandle = env->GetMethodID(cls, "remaining", "()I");
+    env->DeleteLocalRef(cls);
+    int length = env->CallIntMethod(buffer, remainingHandle);
+
+    rc = zmq_send (sock, buf, length, flags);
+    if (rc == -1) {
+        int err = zmq_errno();
+        raise_exception (env, err);
+        return -1;
+    }
+    return rc;
+}
+
 /**
  * Called by Java's Socket::send(byte [] msg, int offset, int flags).
  */

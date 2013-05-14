@@ -476,7 +476,42 @@ public class ZMQTest {
             }
         }
     }
-    
+
+    @Test
+    public void testByteBufferSend() throws InterruptedException {
+        if (ZMQ.version_full() >= ZMQ.make_version(3, 0, 0)) {
+            ZMQ.Context context = ZMQ.context(1);
+            ByteBuffer bb = ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder());
+            ZMQ.Socket push = null;
+            ZMQ.Socket pull = null;
+            try {
+                push = context.socket(ZMQ.PUSH);
+                pull = context.socket(ZMQ.PULL);
+                pull.bind("ipc:///tmp/sendbb");
+                push.connect("ipc:///tmp/sendbb");
+                bb.put("PING".getBytes());
+                bb.flip();
+                push.sendByteBuffer(bb, 0);
+                String actual = new String(pull.recv());
+                System.out.println(actual);
+                assertEquals("PING", actual);
+            } finally {
+                try {
+                    push.close();
+                } catch (Exception ignore) {
+                }
+                try {
+                    pull.close();
+                } catch (Exception ignore) {
+                }
+                try {
+                    context.term();
+                } catch (Exception ignore) {
+                }
+            }
+        }
+    }
+
     @Test
     public void testPollerUnregister() {
         Context context = ZMQ.context(1);
